@@ -1,6 +1,6 @@
 from tastypie.resources import ModelResource
 from tastypie import fields
-from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authentication import Authentication, ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from django.contrib.auth.models import User
 from base.models import Folder, Task
@@ -92,7 +92,7 @@ class TaskResource(ModelResource):
     class Meta:
         queryset = Task.objects.all()
         resource_name = 'task'
-        Authentication = ApiKeyAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = TaskAuthorization()
 
 
