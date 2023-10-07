@@ -1,0 +1,6 @@
+<a href="{% url 'folders' %}"> Go Back </a>
+<p></p>
+<form method="POST">
+    {% csrf_token %}
+    <input type="submit" value="Delete">
+</form>

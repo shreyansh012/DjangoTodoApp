@@ -1,0 +1,20 @@
+
+{% if request.user.is_authenticated %}
+    <p>{{ request.user }}</p>
+    <a href="{% url 'logout' %}">Logout</a>
+{% else %}
+    <a href="{% url 'login' %}">Login</a>
+{% endif %}
+
+<hr>
+<h1>My Todo List</h1>
+<a href="{% url 'folder-create' %}"> Add folder</a>
+<p></p>
+<table>
+    {% for folder in folders %}
+    <tr>
+        <td>{{folder.title}}</td>
+        <td><a href="{% url "folder-delete" folder.id %}">Delete</a></td>
+    </tr>
+    {% endfor %}
+</table>
