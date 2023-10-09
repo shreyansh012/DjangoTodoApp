@@ -11,6 +11,7 @@ from django.contrib.auth import login, logout, authenticate
 from tastypie.models import ApiKey
 from tastypie.http import HttpUnauthorized, HttpBadRequest
 from .authorization import FolderAuthorization, TaskAuthorization
+from tastypie.constants import ALL, ALL_WITH_RELATIONS
 
 
 class UserLoginRegistrationResource(ModelResource):
@@ -95,3 +96,6 @@ class TaskResource(ModelResource):
         resource_name = 'task'
         authentication = ApiKeyAuthentication()
         authorization = TaskAuthorization()
+        filtering = {
+            "folder": ('exact', ),
+        }
