@@ -87,6 +87,7 @@ class FolderResource(ModelResource):
         authentication = ApiKeyAuthentication()
         authorization = FolderAuthorization()
 
+
 class TaskResource(ModelResource):
     folder = fields.ForeignKey(FolderResource, attribute='folder')
     class Meta:
@@ -94,6 +95,3 @@ class TaskResource(ModelResource):
         resource_name = 'task'
         authentication = ApiKeyAuthentication()
         authorization = TaskAuthorization()
-
-
-
