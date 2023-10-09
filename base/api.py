@@ -1,3 +1,4 @@
+from django.http import Http404
 from tastypie.resources import ModelResource
 from tastypie import fields
 from tastypie.authentication import Authentication, ApiKeyAuthentication
@@ -11,7 +12,6 @@ from django.contrib.auth import login, logout, authenticate
 from tastypie.models import ApiKey
 from tastypie.http import HttpUnauthorized, HttpBadRequest
 from .authorization import FolderAuthorization, TaskAuthorization
-from tastypie.constants import ALL, ALL_WITH_RELATIONS
 
 
 class UserLoginRegistrationResource(ModelResource):
@@ -82,11 +82,54 @@ class UserResource(ModelResource):
 
 class FolderResource(ModelResource):
     user = fields.ForeignKey(UserResource, attribute='user',null=True, full=True)
+    shared_with = fields.ManyToManyField(UserResource, attribute='shared_with',null=True)
     class Meta:
         queryset = Folder.objects.all()
         resource_name = 'folder'
         authentication = ApiKeyAuthentication()
         authorization = FolderAuthorization()
+
+    def prepend_urls(self):
+        return [
+            path('folder/<int:pk>/share/', self.wrap_view('share_folder'), name="api_share_folder"),
+            path('folder/<int:pk>/unshare/', self.wrap_view('unshare_folder'), name="api_unshare_folder"),
+        ]
+
+    def share_folder(self, request, **kwargs):
+        folder = Folder.objects.get(pk=kwargs['pk'])
+        if request.user == folder.user:
+            data = self.deserialize(request, request.body)
+            user_id = data.get('user_id')
+            if user_id:
+                user = User.objects.filter(pk=user_id).first()
+                if user:
+                    folder.shared_with.add(user)
+                    folder.save()
+                    return self.create_response(request, {'Successfully shared the folder with the user'})
+                else:
+                    return self.create_response(request, {'error': 'User not found.'}, HttpBadRequest)
+            else:
+                return self.create_response(request, {'error': 'User ID is required.'}, HttpBadRequest)
+        else:
+            return self.create_response(request, {'error': 'Permission denied.'}, HttpUnauthorized)
+
+    def unshare_folder(self, request, **kwargs):
+        folder = Folder.objects.get(pk=kwargs['pk'])
+        if request.user == folder.user:
+            data = self.deserialize(request, request.body)
+            user_id = data.get('user_id')
+            if user_id:
+                user = User.objects.filter(pk=user_id).first()
+                if user:
+                    folder.shared_with.remove(user)
+                    folder.save()
+                    return self.create_response(request, {'Successfully un-shared the folder with the user'})
+                else:
+                    return self.create_response(request, {'error': 'User not found.'}, HttpBadRequest)
+            else:
+                return self.create_response(request, {'error': 'User ID is required.'}, HttpBadRequest)
+        else:
+            return self.create_response(request, {'error': 'Permission denied.'}, HttpUnauthorized)
 
 
 class TaskResource(ModelResource):
