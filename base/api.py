@@ -45,23 +45,21 @@ class UserLoginRegistrationResource(ModelResource):
             raise BadRequest('Please enter a value.')
 
         user = authenticate(username=username, password=password)
-        if user:
-            login(request, user)
-            try:
-                api_key = ApiKey.objects.get(user=user)
-                if not api_key.key:
-                    api_key.save()
-            except ApiKey.DoesNotExist:
-                api_key = ApiKey.objects.create(user=user)
-
-            return self.create_response(request, {
-                    'success': True,
-                    'username':username,
-                    'token': api_key.key
-                })
-        else:
+        if not user:
             raise BadRequest("Incorrect username or password.")
+        login(request, user)
+        try:
+            api_key = ApiKey.objects.get(user=user)
+            if not api_key.key:
+                api_key.save()
+        except ApiKey.DoesNotExist:
+            api_key = ApiKey.objects.create(user=user)
 
+        return self.create_response(request, {
+                'success': True,
+                'username':username,
+                'token': api_key.key
+            })
 
     def logout(self, request, **kwargs):
         # self.method_check(request, allowed=['get'])
@@ -97,39 +95,41 @@ class FolderResource(ModelResource):
 
     def share_folder(self, request, **kwargs):
         folder = Folder.objects.get(pk=kwargs['pk'])
-        if request.user == folder.user:
-            data = self.deserialize(request, request.body)
-            user_id = data.get('user_id')
-            if user_id:
-                user = User.objects.filter(pk=user_id).first()
-                if user:
-                    folder.shared_with.add(user)
-                    folder.save()
-                    return self.create_response(request, {'Successfully shared the folder with the user'})
-                else:
-                    return self.create_response(request, {'error': 'User not found.'}, HttpBadRequest)
-            else:
-                return self.create_response(request, {'error': 'User ID is required.'}, HttpBadRequest)
-        else:
+        if not (request.user == folder.user):
             return self.create_response(request, {'error': 'Permission denied.'}, HttpUnauthorized)
+
+        data = self.deserialize(request, request.body)
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return self.create_response(request, {'error': 'User ID is required.'}, HttpBadRequest)
+
+        user = User.objects.filter(pk=user_id).first()
+        if not user:
+            return self.create_response(request, {'error': 'User not found.'}, HttpBadRequest)
+
+        folder.shared_with.add(user)
+        folder.save()
+        return self.create_response(request, {'Successfully shared the folder with the user'})       
 
     def unshare_folder(self, request, **kwargs):
         folder = Folder.objects.get(pk=kwargs['pk'])
-        if request.user == folder.user:
-            data = self.deserialize(request, request.body)
-            user_id = data.get('user_id')
-            if user_id:
-                user = User.objects.filter(pk=user_id).first()
-                if user:
-                    folder.shared_with.remove(user)
-                    folder.save()
-                    return self.create_response(request, {'Successfully un-shared the folder with the user'})
-                else:
-                    return self.create_response(request, {'error': 'User not found.'}, HttpBadRequest)
-            else:
-                return self.create_response(request, {'error': 'User ID is required.'}, HttpBadRequest)
-        else:
+
+        if not (request.user == folder.user):
             return self.create_response(request, {'error': 'Permission denied.'}, HttpUnauthorized)
+
+        data = self.deserialize(request, request.body)
+        user_id = data.get('user_id')
+        if not user_id:
+            return self.create_response(request, {'error': 'User ID is required.'}, HttpBadRequest)
+
+        user = User.objects.filter(pk=user_id).first()
+        if not user:
+            return self.create_response(request, {'error': 'User not found.'}, HttpBadRequest)
+
+        folder.shared_with.remove(user)
+        folder.save()
+        return self.create_response(request, {'Successfully un-shared the folder with the user'})
 
 
 class TaskResource(ModelResource):
