@@ -24,7 +24,6 @@ Pygments==2.14.0
 pypiwin32==223
 pypng==0.20220715.0
 python-socks==2.2.0
-pywin32==306
 QDarkStyle==2.8.1
 QtPy==2.3.0
 requests==2.28.2
